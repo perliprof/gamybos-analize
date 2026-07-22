@@ -219,8 +219,8 @@ async function loadGamyba() {
       .replace(/0-1\s+mm/g,'0-1mm');
     const hdrs = rows[0].map(normalizeH);
     const n = v => parseFloat(String(v||'').replace(',','.')) || 0;
-    const M3_COLS = hdrs.filter(h => /^produktas .+ m3$/.test(h));
-    const RAW_COLS = hdrs.filter(h => /zaliava kg$/.test(h));
+    const M3_COLS = [...new Set(hdrs.filter(h => /^produktas .+ m3$/.test(h)))];
+    const RAW_COLS = [...new Set(hdrs.filter(h => /zaliava kg$/.test(h)))];
     GAMYBA_DATA = rows.slice(1).map(vals => {
       const o = {}; hdrs.forEach((h,i) => { o[h] = (vals[i]||'').trim(); });
       const prods = {};
