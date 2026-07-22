@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gamybos analizė · Perliprof</title>
+<meta name="theme-color" content="#7A3B00">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
+
+.page-header {
+  background: #7A3B00; color: white;
+  padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 1rem; }
+.header-left img { height: 40px; width: auto; }
+.header-left h1 { font-size: 20px; font-weight: 800; }
+.header-right { display: flex; align-items: center; gap: 0.6rem; }
+
+.nav-btn {
+  font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700;
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  padding: 6px 14px; border-radius: 8px; cursor: pointer;
+}
+.nav-btn:hover { background: rgba(255,255,255,0.25); }
+
+.page-body { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
+
+.kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.9rem; margin-bottom: 1.1rem; }
+@media (max-width: 900px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+.kpi-card { background: white; border-radius: 12px; padding: 0.9rem 1.1rem; border-top: 3px solid; }
+.kpi-label { font-size: 11px; font-weight: 700; color: #6e6e73; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+.kpi-value { font-size: 22px; font-weight: 800; line-height: 1.1; }
+
+.card { background: white; border-radius: 14px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+.card-title { font-size: 14px; font-weight: 700; color: #0A2342; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
+
+#auth-gate { position: fixed; inset: 0; background: #7A3B00; display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+#auth-gate.show { display: flex; }
+.auth-box { background: #fff; border-radius: 16px; padding: 28px 26px; width: 100%; max-width: 340px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); text-align: center; }
+.auth-title { font-size: 19px; font-weight: 800; color: #7A3B00; }
+.auth-sub { font-size: 13px; color: #6e6e73; margin: 6px 0 16px; }
+.auth-box input { width: 100%; font-family: inherit; font-size: 15px; padding: 11px 13px; border: 1px solid #d0d5dd; border-radius: 10px; outline: none; margin-bottom: 10px; }
+.auth-box input:focus { border-color: #7A3B00; }
+.auth-btn { width: 100%; font-family: inherit; font-size: 15px; font-weight: 700; padding: 11px; border: none; border-radius: 10px; background: #7A3B00; color: white; cursor: pointer; }
+.auth-msg { margin-top: 10px; font-size: 13px; color: #C0392B; min-height: 16px; }
+
+.cal-nav-btn { font-family: 'Montserrat', sans-serif; background: rgba(255,255,255,0.15); border: none; color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 700; }
+.cal-sel { font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; background: rgba(255,255,255,0.12); color: white; padding: 3px 6px; }
+</style>
+</head>
+<body>
+
+<div id="auth-gate" class="show">
+  <div class="auth-box">
+    <div class="auth-title">🏭 Gamybos analizė</div>
+    <p class="auth-sub">Įveskite prieigos kodą</p>
+    <input type="password" id="pw-input" placeholder="Kodas…" onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="auth-btn" onclick="checkPw()">Prisijungti</button>
+    <div class="auth-msg" id="pw-msg"></div>
+  </div>
+</div>
+
+<div class="page-header">
+  <div class="header-left">
+    <img src="logo.png" alt="Perliprof">
+    <h1>🏭 Gamybos analizė</h1>
+  </div>
+  <div class="header-right">
+    <!-- Mode tabs -->
+    <button id="gbt0" onclick="setGamMode(0)" class="nav-btn">Mėnuo</button>
+    <button id="gbt1" onclick="setGamMode(1)" class="nav-btn" style="opacity:0.6">Metinis</button>
+    <button id="gbt2" onclick="setGamMode(2)" class="nav-btn" style="opacity:0.6">Pagal mėnesį</button>
+    <!-- Selectors -->
+    <div id="gam-sel-0" style="display:flex;align-items:center;gap:0.4rem">
+      <button class="cal-nav-btn" onclick="gamybaNav(-1)">‹</button>
+      <select class="cal-sel" id="gam-month-sel" onchange="gamybaSel()">
+        <option value="0">Sausis</option><option value="1">Vasaris</option><option value="2">Kovas</option>
+        <option value="3">Balandis</option><option value="4">Gegužė</option><option value="5">Birželis</option>
+        <option value="6">Liepa</option><option value="7">Rugpjūtis</option><option value="8">Rugsėjis</option>
+        <option value="9">Spalis</option><option value="10">Lapkritis</option><option value="11">Gruodis</option>
+      </select>
+      <select class="cal-sel" id="gam-year-sel" onchange="gamybaSel()"></select>
+      <button class="cal-nav-btn" onclick="gamybaNav(1)">›</button>
+    </div>
+    <div id="gam-sel-1" style="display:none;align-items:center">
+      <select class="cal-sel" id="gam-ann-year" onchange="renderGamybaAnnual()" style="color:#0A2342;background:#f2f2f7;border-color:#e5e5ea"></select>
+    </div>
+    <div id="gam-sel-2" style="display:none;align-items:center">
+      <select class="cal-sel" id="gam-cross-month" onchange="renderGamybaCrossYear()">
+        <option value="01">Sausis</option><option value="02">Vasaris</option><option value="03">Kovas</option>
+        <option value="04">Balandis</option><option value="05">Gegužė</option><option value="06">Birželis</option>
+        <option value="07">Liepa</option><option value="08">Rugpjūtis</option><option value="09">Rugsėjis</option>
+        <option value="10">Spalis</option><option value="11">Lapkritis</option><option value="12">Gruodis</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div id="gam-loading" style="text-align:center;padding:4rem;color:#6e6e73;font-size:15px;font-weight:700">Kraunama…</div>
+  <div id="gam-body" style="display:none">
+
+    <!-- MODE 0: Mėnuo -->
+    <div id="gam-view-0">
+      <div class="card">
+        <div class="card-title">Dienos gamyba</div>
+        <div style="height:260px"><canvas id="gam-daily-chart"></canvas></div>
+      </div>
+      <div id="gam-kpi" class="kpi-row"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div class="card"><div class="card-title">Produktai · m³</div><div id="gam-products"></div></div>
+        <div class="card"><div class="card-title">Žaliavos · kg</div><div id="gam-raw"></div></div>
+        <div class="card"><div class="card-title">Pamainos · m³</div><div id="gam-shifts"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" onclick="toggleGamTable()" style="cursor:pointer;display:flex;justify-content:space-between">
+          <span>Dienos duomenys</span>
+          <span id="gam-table-arrow" style="font-size:12px;opacity:0.6">▶ Rodyti</span>
+        </div>
+        <div id="gam-table-wrap" style="display:none;overflow-x:auto;margin-top:0.75rem">
+          <table id="gam-table" style="width:100%;border-collapse:collapse;font-size:12px"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE 1: Metinis -->
+    <div id="gam-view-1" style="display:none">
+      <div class="card">
+        <div id="gam-toggles" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.9rem"></div>
+        <div style="height:300px"><canvas id="gam-annual-chart"></canvas></div>
+        <div id="gam-raw-summary" style="margin-top:1rem"></div>
+      </div>
+    </div>
+
+    <!-- MODE 2: Pagal mėnesį -->
+    <div id="gam-view-2" style="display:none">
+      <div class="card">
+        <div class="card-title" id="gam-cross-title">Palyginimas per metus</div>
+        <div style="height:280px"><canvas id="gam-cross-chart"></canvas></div>
+      </div>
+      <div id="gam-cross-kpi" class="kpi-row" style="margin-bottom:1.2rem"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div class="card"><div class="card-title">Produktai · m³</div><div id="gam-cross-products"></div></div>
+        <div class="card"><div class="card-title">Pamainos · m³</div><div id="gam-cross-shifts"></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Prieigos kodas ──
+// Pakeisk šį slaptažodį į savo
+const GAM_PW = 'gamyba2026';
+
+function checkPw() {
+  const val = document.getElementById('pw-input').value.trim();
+  if (val === GAM_PW) {
+    localStorage.setItem('gam_secret', GAM_PW);
+    document.getElementById('auth-gate').classList.remove('show');
+    init();
+  } else {
+    document.getElementById('pw-msg').textContent = 'Neteisingas kodas.';
+  }
+}
+
+// ── Duomenys ──
+const GAMYBA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTRGeNdfu4A-DOF4jONXpTCKaSkE1uUpLXa94HHkNPw1mhIoWHNcKwhvoSL22Nh48DEV2DDMZ1KXprI/pub?output=csv';
+let GAMYBA_DATA = null;
+let gamYear, gamMonth, gamMode = 0;
+let _charts = {};
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function mkChart(id, config) {
+  if (_charts[id]) _charts[id].destroy();
+  _charts[id] = new Chart(document.getElementById(id), config);
+}
+function parseCSV(text) {
+  const rows = []; let row = [], field = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') { if (q && text[i+1] === '"') { field += '"'; i++; } else q = !q; }
+    else if (c === ',' && !q) { row.push(field); field = ''; }
+    else if ((c === '\n' || c === '\r') && !q) {
+      row.push(field); field = '';
+      if (row.some(x=>x)) rows.push(row);
+      row = [];
+      if (c === '\r' && text[i+1] === '\n') i++;
+    } else field += c;
+  }
+  if (field || row.length) { row.push(field); if (row.some(x=>x)) rows.push(row); }
+  return rows;
+}
+
+async function loadGamyba() {
+  document.getElementById('gam-loading').style.display = '';
+  document.getElementById('gam-body').style.display = 'none';
+  try {
+    const resp = await fetch(GAMYBA_URL + '&t=' + Date.now());
+    const text = await resp.text();
+    const rows = parseCSV(text).filter(r => r.some(c => c.trim()));
+    const normalizeH = h => h.trim().toLowerCase()
+      .replace(/ž/g,'z').replace(/š/g,'s').replace(/č/g,'c').replace(/ė/g,'e')
+      .replace(/ų/g,'u').replace(/ū/g,'u').replace(/į/g,'i').replace(/ą/g,'a')
+      .replace(/0-1\s+mm/g,'0-1mm');
+    const hdrs = rows[0].map(normalizeH);
+    const n = v => parseFloat(String(v||'').replace(',','.')) || 0;
+    const M3_COLS = hdrs.filter(h => /^produktas .+ m3$/.test(h));
+    const RAW_COLS = hdrs.filter(h => /zaliava kg$/.test(h));
+    GAMYBA_DATA = rows.slice(1).map(vals => {
+      const o = {}; hdrs.forEach((h,i) => { o[h] = (vals[i]||'').trim(); });
+      const prods = {};
+      M3_COLS.forEach(k => { const v=n(o[k]); if(v>0) prods[k.replace(/^produktas /,'').replace(/ m3$/,'').trim()]=v; });
+      const rawBrk = {};
+      RAW_COLS.forEach(k => { const v=n(o[k]); if(v>0) rawBrk[k.replace(/ zaliava kg$/,'').trim()]=v; });
+      return {
+        date:  o.date||'', shift: parseInt(o['pamaina']||o['shift'])||0,
+        type:  o['pamaina tip']||o['type']||'',
+        m3:    M3_COLS.reduce((s,k)=>s+n(o[k]),0),
+        smelis:     n(o['s kg']),
+        krituliai:  n(o['krituliai']||o['krit']),
+        e_atliekos: n(o['e kg'])+n(o['e bb kg'])+n(o['d kg']),
+        waste:      n(o['s kg'])+n(o['krituliai']||o['krit'])+n(o['e kg'])+n(o['e bb kg'])+n(o['d kg']),
+        gas:   n(o['dujos m3']||o['gas']),
+        kwh:   n(o['elektra kwh']||o['kwh']),
+        raw:   RAW_COLS.reduce((s,k)=>s+n(o[k]),0),
+        prods, rawBrk,
+      };
+    }).filter(d => d.date && d.shift > 0);
+
+    const dates = GAMYBA_DATA.map(d=>d.date).filter(Boolean).sort();
+    const last = dates[dates.length-1] || new Date().toISOString().slice(0,10);
+    gamYear  = parseInt(last.substring(0,4));
+    gamMonth = parseInt(last.substring(5,7))-1;
+
+    const years = [...new Set(dates.map(d=>d.substring(0,4)))].sort().reverse();
+    document.getElementById('gam-year-sel').innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join('');
+    document.getElementById('gam-ann-year').innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join('');
+    document.getElementById('gam-cross-month').value = String(gamMonth+1).padStart(2,'0');
+
+    buildGamToggles();
+    setGamMode(gamMode);
+  } catch(e) {
+    document.getElementById('gam-loading').textContent = 'Klaida: ' + e.message;
+  }
+}
+
+function setGamMode(m) {
+  gamMode = m;
+  [0,1,2].forEach(i => {
+    document.getElementById('gam-view-'+i).style.display = i===m ? '' : 'none';
+    document.getElementById('gam-sel-'+i).style.display  = i===m ? 'flex' : 'none';
+    const btn = document.getElementById('gbt'+i);
+    btn.style.background = i===m ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)';
+    btn.style.opacity = i===m ? '1' : '0.6';
+  });
+  if (m===0) renderGamyba();
+  else if (m===1) renderGamybaAnnual();
+  else renderGamybaCrossYear();
+}
+
+function gamybaNav(dir) {
+  gamMonth += dir;
+  if (gamMonth < 0)  { gamMonth = 11; gamYear--; }
+  if (gamMonth > 11) { gamMonth = 0;  gamYear++; }
+  renderGamyba();
+}
+function gamybaSel() {
+  gamMonth = parseInt(document.getElementById('gam-month-sel').value);
+  gamYear  = parseInt(document.getElementById('gam-year-sel').value);
+  renderGamyba();
+}
+
+const GAM_SERIES = {
+  'P1 m³':      { color:'#C47A00', fn: d => d.shift===1 ? d.m3 : 0 },
+  'P2 m³':      { color:'#2A6FAD', fn: d => d.shift===2 ? d.m3 : 0 },
+  'P3 m³':      { color:'#1A7A4A', fn: d => d.shift===3 ? d.m3 : 0 },
+  'P4 m³':      { color:'#C0392B', fn: d => d.shift===4 ? d.m3 : 0 },
+  'Premium':    { color:'#6B46C1', fn: d => d.prods['Premium']||0 },
+  'Extra':      { color:'#0F7870', fn: d => d.prods['Extra']||d.prods['Ekstra']||0 },
+  'Medium':     { color:'#D97706', fn: d => d.prods['Medium']||0 },
+  'Silos':      { color:'#2B6CB0', fn: d => (d.prods['A Silos']||0)+(d.prods['B Silos']||0)+(d.prods['C Silos']||0) },
+  '0-1mm':      { color:'#AEADB3', fn: d => d.prods['0-1mm']||0 },
+  'Dujos m³':   { color:'#C0392B', fn: d => d.gas },
+  'Žaliavos kg':{ color:'#7A5200', fn: d => d.raw },
+  'Krituliai':  { color:'#E07055', fn: d => d.krituliai },
+};
+let gamAnnActive = new Set(['P1 m³','P2 m³','Dujos m³']);
+
+function buildGamToggles() {
+  document.getElementById('gam-toggles').innerHTML = Object.keys(GAM_SERIES).map(k => {
+    const on = gamAnnActive.has(k);
+    return `<button onclick="gamToggle('${k}')" id="gtog-${k.replace(/[^a-z0-9]/gi,'_')}"
+      style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;border:2px solid ${GAM_SERIES[k].color};cursor:pointer;
+             background:${on?GAM_SERIES[k].color:'transparent'};color:${on?'#fff':GAM_SERIES[k].color}">${k}</button>`;
+  }).join('');
+}
+function gamToggle(k) {
+  if (gamAnnActive.has(k)) gamAnnActive.delete(k); else gamAnnActive.add(k);
+  buildGamToggles(); renderGamybaAnnual();
+}
+
+function renderGamybaAnnual() {
+  const yr = parseInt(document.getElementById('gam-ann-year').value);
+  const MONTHS = ['Sau','Vas','Kov','Bal','Geg','Bir','Lie','Rgp','Rgs','Spa','Lap','Grd'];
+  const byMonth = Array.from({length:12}, () => []);
+  GAMYBA_DATA.filter(d => d.date.startsWith(yr+'')).forEach(d => {
+    const m = parseInt(d.date.substring(5,7)) - 1;
+    if (m >= 0 && m < 12) byMonth[m].push(d);
+  });
+  const datasets = [...gamAnnActive].map(k => {
+    const s = GAM_SERIES[k];
+    return { label:k, data:byMonth.map(ms=>+ms.reduce((sum,d)=>sum+s.fn(d),0).toFixed(1)),
+      borderColor:s.color, backgroundColor:s.color+'22', borderWidth:2, pointRadius:3, tension:0.3, fill:false };
+  });
+  const annData = GAMYBA_DATA.filter(d => d.date.startsWith(yr+''));
+  const totM3ann = annData.reduce((s,d)=>s+d.m3,0);
+  const totDays  = [...new Set(annData.map(d=>d.date))].length;
+  const totRaw   = annData.reduce((s,d)=>s+d.raw,0);
+  const totGas   = annData.reduce((s,d)=>s+d.gas,0);
+  const totKrit  = annData.reduce((s,d)=>s+d.krituliai+d.smelis,0);
+  const fmt = v => v>0 ? v.toLocaleString('lt-LT') : '—';
+  document.getElementById('gam-raw-summary').innerHTML = `
+    <div style="border-top:1px solid #e5e5ea;padding-top:0.9rem;display:grid;grid-template-columns:repeat(5,1fr);gap:0.6rem">
+      ${[{label:'Iš viso m³',val:totM3ann>0?totM3ann.toFixed(1)+' m³':'—',color:'#0A2342'},
+         {label:'Darbo dienos',val:totDays||'—',color:'#1A4F80'},
+         {label:'Krituliai+smėlis',val:totKrit>0?fmt(Math.round(totKrit))+' kg':'—',color:'#C0392B'},
+         {label:'Sunaudota žaliava',val:totRaw>0?fmt(Math.round(totRaw))+' kg':'—',color:'#7A5200'},
+         {label:'Dujos',val:totGas>0?totGas.toLocaleString('lt-LT')+' m³':'—',color:'#E07055'},
+      ].map(k=>`<div style="background:#f8f8f8;border-radius:10px;padding:0.65rem 0.8rem;border-top:3px solid ${k.color}">
+        <div style="font-size:10px;font-weight:700;color:#6e6e73;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">${k.label}</div>
+        <div style="font-size:15px;font-weight:800;color:${k.color}">${k.val}</div>
+      </div>`).join('')}
+    </div>`;
+  mkChart('gam-annual-chart', {
+    type: 'line', data: { labels: MONTHS, datasets },
+    options: { responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{position:'top',labels:{font:{size:11,family:"'Montserrat'"},boxWidth:12}}},
+      scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#f0f0f0'}}} }
+  });
+}
+
+function renderGamybaCrossYear() {
+  const monthStr = document.getElementById('gam-cross-month').value;
+  const MONTHS_LT = ['Sausis','Vasaris','Kovas','Balandis','Gegužė','Birželis','Liepa','Rugpjūtis','Rugsėjis','Spalis','Lapkritis','Gruodis'];
+  document.getElementById('gam-cross-title').textContent = MONTHS_LT[parseInt(monthStr)-1] + ' — palyginimas per metus';
+  const data = GAMYBA_DATA.filter(d => d.date.substring(5,7) === monthStr);
+  const years = [...new Set(data.map(d=>d.date.substring(0,4)))].sort();
+  const SC = {'1':'#C47A00','2':'#2A6FAD','3':'#1A7A4A','4':'#C0392B'};
+  mkChart('gam-cross-chart', {
+    type:'bar',
+    data:{ labels:years, datasets:['1','2','3','4'].map(s=>({
+      label:'P'+s, data:years.map(yr=>data.filter(d=>d.date.startsWith(yr)&&d.shift===+s).reduce((a,d)=>a+d.m3,0)), backgroundColor:SC[s]
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:11,family:"'Montserrat'"},boxWidth:12}}},
+      scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true}}}
+  });
+  document.getElementById('gam-cross-kpi').innerHTML = years.map(yr => {
+    const yd = data.filter(d=>d.date.startsWith(yr));
+    const m3 = yd.reduce((s,d)=>s+d.m3,0);
+    const days = [...new Set(yd.map(d=>d.date))].length;
+    const gas = yd.reduce((s,d)=>s+d.gas,0);
+    return `<div class="kpi-card" style="border-top-color:#0A2342">
+      <div class="kpi-label">${yr}</div>
+      <div class="kpi-value" style="color:#0A2342">${m3>0?m3.toFixed(1)+' m³':'—'}</div>
+      <div style="font-size:11px;color:#6e6e73;margin-top:2px">${days} d. · ${gas>0?gas.toLocaleString('lt-LT')+' m³ duj.':'—'}</div>
+    </div>`;
+  }).join('');
+  const prodTotals = {};
+  data.forEach(d=>Object.entries(d.prods).forEach(([p,v])=>{ prodTotals[p]=(prodTotals[p]||0)+v; }));
+  const prodSorted = Object.entries(prodTotals).sort((a,b)=>b[1]-a[1]);
+  const maxProd = prodSorted[0]?.[1]||1;
+  document.getElementById('gam-cross-products').innerHTML = prodSorted.length ? prodSorted.map(([p,v])=>`
+    <div style="margin-bottom:0.55rem">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:3px">
+        <span>${escapeHtml(p)}</span><span style="color:#1A7A4A">${v.toFixed(1)} m³</span>
+      </div>
+      <div style="height:8px;background:#e5e5ea;border-radius:4px">
+        <div style="height:8px;border-radius:4px;background:#1A7A4A;width:${(v/maxProd*100).toFixed(1)}%"></div>
+      </div>
+    </div>`).join('') : '<div style="color:#8e8e93;font-size:13px">Nėra duomenų</div>';
+  const shiftTotals = {};
+  data.forEach(d=>{ const k='Pamaina '+d.shift; shiftTotals[k]=(shiftTotals[k]||0)+d.m3; });
+  const shiftSorted = Object.entries(shiftTotals).sort((a,b)=>a[0].localeCompare(b[0]));
+  const shiftColors = ['#C47A00','#2A6FAD','#1A7A4A','#C0392B'];
+  const maxShift = shiftSorted.length ? Math.max(...shiftSorted.map(([,v])=>v)) : 1;
+  document.getElementById('gam-cross-shifts').innerHTML = shiftSorted.length ? shiftSorted.map(([s,v],i)=>`
+    <div style="margin-bottom:0.55rem">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:3px">
+        <span>${escapeHtml(s)}</span><span style="color:${shiftColors[i%4]}">${v.toFixed(1)} m³</span>
+      </div>
+      <div style="height:8px;background:#e5e5ea;border-radius:4px">
+        <div style="height:8px;border-radius:4px;background:${shiftColors[i%4]};width:${(v/maxShift*100).toFixed(1)}%"></div>
+      </div>
+    </div>`).join('') : '<div style="color:#8e8e93;font-size:13px">Nėra duomenų</div>';
+}
+
+function toggleGamTable() {
+  const wrap = document.getElementById('gam-table-wrap');
+  const arrow = document.getElementById('gam-table-arrow');
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? '' : 'none';
+  arrow.textContent = open ? '▼ Slėpti' : '▶ Rodyti';
+}
+
+function renderGamyba() {
+  document.getElementById('gam-month-sel').value = gamMonth;
+  document.getElementById('gam-year-sel').value  = gamYear;
+  const prefix = gamYear + '-' + String(gamMonth+1).padStart(2,'0');
+  const data = GAMYBA_DATA.filter(d => d.date.startsWith(prefix));
+  document.getElementById('gam-loading').style.display = 'none';
+  document.getElementById('gam-body').style.display = '';
+
+  const SC = {'1':'#C47A00','2':'#2A6FAD','3':'#1A7A4A','4':'#C0392B'};
+  const dayDates = [...new Set(data.map(d=>d.date))].sort();
+  mkChart('gam-daily-chart', {
+    type:'bar',
+    data:{ labels:dayDates.map(d=>d.slice(8)),
+      datasets:['1','2','3','4'].map(s=>({
+        label:'P'+s, data:dayDates.map(dt=>data.filter(d=>d.date===dt&&d.shift===+s).reduce((a,d)=>a+d.m3,0)), backgroundColor:SC[s]
+      }))},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:11,family:"'Montserrat'"},boxWidth:12}}},
+      scales:{x:{grid:{display:false},stacked:true},y:{beginAtZero:true,stacked:true}} }
+  });
+
+  const totM3    = data.reduce((s,d)=>s+d.m3,0);
+  const totRaw   = data.reduce((s,d)=>s+d.raw,0);
+  const totGas   = data.reduce((s,d)=>s+d.gas,0);
+  const totKrit  = data.reduce((s,d)=>s+d.krituliai,0);
+  const days     = dayDates.length;
+  document.getElementById('gam-kpi').innerHTML = [
+    {label:'Iš viso m³',   val:totM3.toFixed(1)+' m³',                                            color:'#0A2342'},
+    {label:'Darbo dienų',  val:days,                                                                color:'#1A4F80'},
+    {label:'Sunaudota žaliava', val:totRaw>0?totRaw.toLocaleString('lt-LT')+' kg':'—',            color:'#7A5200'},
+    {label:'Krituliai',    val:totKrit>0?totKrit.toFixed(0)+' kg':'—',                             color:'#C0392B'},
+    {label:'Dujos',        val:totGas>0?totGas.toLocaleString('lt-LT')+' m³':'—',                 color:'#E07055'},
+  ].map(k=>`<div class="kpi-card" style="border-top-color:${k.color}">
+    <div class="kpi-label">${k.label}</div>
+    <div class="kpi-value" style="color:${k.color}">${k.val}</div>
+  </div>`).join('');
+
+  const prodTotals = {};
+  data.forEach(d=>Object.entries(d.prods).forEach(([p,v])=>{ prodTotals[p]=(prodTotals[p]||0)+v; }));
+  const prodSorted = Object.entries(prodTotals).sort((a,b)=>b[1]-a[1]);
+  const maxProd = prodSorted[0]?.[1]||1;
+  document.getElementById('gam-products').innerHTML = prodSorted.length ? prodSorted.map(([p,v])=>`
+    <div style="margin-bottom:0.55rem">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:3px">
+        <span>${escapeHtml(p)}</span><span style="color:#1A7A4A">${v.toFixed(1)} m³</span>
+      </div>
+      <div style="height:8px;background:#e5e5ea;border-radius:4px">
+        <div style="height:8px;border-radius:4px;background:#1A7A4A;width:${(v/maxProd*100).toFixed(1)}%"></div>
+      </div>
+    </div>`).join('') : '<div style="color:#8e8e93;font-size:13px">Nėra duomenų</div>';
+
+  const rawTotals = {};
+  data.forEach(d=>Object.entries(d.rawBrk||{}).forEach(([k,v])=>{ rawTotals[k]=(rawTotals[k]||0)+v; }));
+  const rawSorted = Object.entries(rawTotals).sort((a,b)=>b[1]-a[1]);
+  const totalRaw2 = rawSorted.reduce((s,[,v])=>s+v,0);
+  const maxRaw = rawSorted[0]?.[1]||1;
+  document.getElementById('gam-raw').innerHTML = rawSorted.length ? `
+    <div style="font-size:13px;font-weight:700;color:#7A5200;margin-bottom:0.5rem">
+      Iš viso: ${(totalRaw2/1000).toLocaleString('lt-LT',{minimumFractionDigits:2,maximumFractionDigits:2})} t
+    </div>` + rawSorted.map(([k,v])=>`
+    <div style="margin-bottom:0.55rem">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:3px">
+        <span>${escapeHtml(k)}</span><span style="color:#7A5200">${(v/1000).toLocaleString('lt-LT',{minimumFractionDigits:2,maximumFractionDigits:2})} t</span>
+      </div>
+      <div style="height:8px;background:#e5e5ea;border-radius:4px">
+        <div style="height:8px;border-radius:4px;background:#C47A00;width:${(v/maxRaw*100).toFixed(1)}%"></div>
+      </div>
+    </div>`).join('') : '<div style="color:#8e8e93;font-size:13px">Nėra duomenų</div>';
+
+  const shiftTotals = {};
+  data.forEach(d=>{ const k='Pamaina '+d.shift; shiftTotals[k]=(shiftTotals[k]||0)+d.m3; });
+  const shiftSorted = Object.entries(shiftTotals).sort((a,b)=>a[0].localeCompare(b[0]));
+  const shiftColors = ['#C47A00','#2A6FAD','#1A7A4A','#C0392B'];
+  const maxShift = shiftSorted.length ? Math.max(...shiftSorted.map(([,v])=>v)) : 1;
+  document.getElementById('gam-shifts').innerHTML = shiftSorted.length ? shiftSorted.map(([s,v],i)=>`
+    <div style="margin-bottom:0.55rem">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:3px">
+        <span>${escapeHtml(s)}</span><span style="color:${shiftColors[i%4]}">${v.toFixed(1)} m³</span>
+      </div>
+      <div style="height:8px;background:#e5e5ea;border-radius:4px">
+        <div style="height:8px;border-radius:4px;background:${shiftColors[i%4]};width:${(v/maxShift*100).toFixed(1)}%"></div>
+      </div>
+    </div>`).join('') : '<div style="color:#8e8e93;font-size:13px">Nėra duomenų</div>';
+
+  const byDay = {};
+  data.forEach(d => { if(!byDay[d.date]) byDay[d.date]=[]; byDay[d.date].push(d); });
+  const allProds = [...new Set(data.flatMap(d=>Object.keys(d.prods)))].sort();
+  const thS = 'padding:6px 8px;background:#f2f2f7;font-weight:700;font-size:11px;text-align:left;white-space:nowrap;border-bottom:2px solid #e5e5ea';
+  const tdS = 'padding:5px 8px;font-size:12px;border-bottom:1px solid #f0f0f0';
+  const thead = `<tr><th style="${thS}">Data</th><th style="${thS}">Pamaina</th>
+    ${allProds.map(p=>`<th style="${thS}">${escapeHtml(p)}</th>`).join('')}
+    <th style="${thS}">Viso m³</th><th style="${thS}">Krituliai kg</th><th style="${thS}">Dujos m³</th></tr>`;
+  const tbody = Object.entries(byDay).sort(([a],[b])=>a.localeCompare(b)).flatMap(([date,shifts]) => {
+    const dayM3 = shifts.reduce((s,d)=>s+d.m3,0);
+    const rows = shifts.sort((a,b)=>a.shift-b.shift).map(d=>`<tr>
+      <td style="${tdS}">${date.slice(5)}</td><td style="${tdS}">P${d.shift}</td>
+      ${allProds.map(p=>`<td style="${tdS};text-align:right">${d.prods[p]?.toFixed(1)||'—'}</td>`).join('')}
+      <td style="${tdS};font-weight:700;text-align:right">${d.m3.toFixed(1)}</td>
+      <td style="${tdS};text-align:right;color:#C0392B">${d.krituliai>0?d.krituliai.toFixed(0):'—'}</td>
+      <td style="${tdS};text-align:right">${d.gas>0?d.gas.toFixed(0):'—'}</td>
+    </tr>`).join('');
+    const sumRow = shifts.length>1 ? `<tr style="background:#f8f8f8">
+      <td style="${tdS};font-weight:800">${date.slice(5)}</td><td style="${tdS};font-weight:800;color:#555">Diena</td>
+      ${allProds.map(p=>`<td style="${tdS};font-weight:700;text-align:right">${shifts.reduce((s,d)=>s+(d.prods[p]||0),0).toFixed(1)}</td>`).join('')}
+      <td style="${tdS};font-weight:800;text-align:right;color:#1A7A4A">${dayM3.toFixed(1)}</td>
+      <td style="${tdS}"></td><td style="${tdS}"></td>
+    </tr>` : '';
+    return [rows, sumRow];
+  });
+  document.getElementById('gam-table').innerHTML = `<thead>${thead}</thead><tbody>${tbody.join('')}</tbody>`;
+}
+
+function init() {
+  loadGamyba();
+}
+
+// Paleidimas
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('gam_secret');
+  if (saved === GAM_PW) {
+    document.getElementById('auth-gate').classList.remove('show');
+    init();
+  }
+});
+</script>
+</body>
+</html>
