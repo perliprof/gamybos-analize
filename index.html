@@ -230,7 +230,7 @@ async function loadGamyba() {
       return {
         date:  o.date||'', shift: parseInt(o['pamaina']||o['shift'])||0,
         type:  o['pamaina tip']||o['type']||'',
-        m3:    M3_COLS.reduce((s,k)=>s+n(o[k]),0),
+        m3:    (s => s > 0 ? s : n(o.m3))(M3_COLS.reduce((s,k)=>s+n(o[k]),0)),
         smelis:     n(o['s kg']),
         krituliai:  n(o['krituliai']||o['krit']),
         e_atliekos: n(o['e kg'])+n(o['e bb kg'])+n(o['d kg']),
