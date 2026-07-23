@@ -482,25 +482,43 @@ function renderGamyba() {
     <div class="kpi-value" style="color:${k.color}">${k.val}</div>
   </div>`).join('');
 
-  // Praėjusio mėnesio lyginimas
+  // Paskutinių 3 mėnesių lyginimas
   (function() {
-    const pm = gamMonth === 0 ? 11 : gamMonth - 1;
-    const py = gamMonth === 0 ? gamYear - 1 : gamYear;
-    const MONTHS_LT = ['sausis','vasaris','kovas','balandis','gegužė','birželis','liepa','rugpjūtis','rugsėjis','spalis','lapkritis','gruodis'];
-    const prevPrefix = py + '-' + String(pm+1).padStart(2,'0');
-    const prevData = GAMYBA_DATA.filter(d => d.date.startsWith(prevPrefix));
-    const prevM3   = prevData.reduce((s,d)=>s+d.m3,0);
-    const prevDays = [...new Set(prevData.map(d=>d.date))].length;
+    const MONTHS_LT = ['Sau','Vas','Kov','Bal','Geg','Bir','Lie','Rug','Rgs','Spa','Lap','Gru'];
     const el = document.getElementById('gam-compare');
-    if (!prevM3) { el.innerHTML = ''; return; }
-    const pct = (totM3 - prevM3) / prevM3 * 100;
-    const col = pct >= 0 ? '#1A7A4A' : '#C0392B';
-    const arrow = pct >= 0 ? '↑' : '↓';
-    el.innerHTML = `<div style="background:white;border-radius:12px;padding:0.65rem 1rem;font-size:13px;display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
-      <span style="font-weight:700;color:#6e6e73;text-transform:uppercase;font-size:11px;letter-spacing:0.5px">Lyginimas su praėjusiu mėn.</span>
-      <span style="color:#8e8e93">${MONTHS_LT[pm].charAt(0).toUpperCase()+MONTHS_LT[pm].slice(1)} ${py}: <b>${prevM3.toFixed(1)} m³</b> · ${prevDays} d.</span>
-      <span style="color:#0A2342;font-weight:700">${MONTHS_LT[gamMonth].charAt(0).toUpperCase()+MONTHS_LT[gamMonth].slice(1)} ${gamYear}: <b>${totM3.toFixed(1)} m³</b> · ${days} d.</span>
-      <span style="font-weight:800;color:${col};font-size:14px">${arrow} ${Math.abs(pct).toFixed(1)}%</span>
+
+    // Surenkame 3 praėjusius mėnesius + einamąjį (iš viso 4 = einamasis + 3 praeiti)
+    const months = [];
+    for (let i = 3; i >= 0; i--) {
+      let m = gamMonth - i, y = gamYear;
+      while (m < 0) { m += 12; y--; }
+      const prefix = y + '-' + String(m+1).padStart(2,'0');
+      const mData = i === 0 ? data : GAMYBA_DATA.filter(d => d.date.startsWith(prefix));
+      const m3  = i === 0 ? totM3 : mData.reduce((s,d)=>s+d.m3,0);
+      const d_  = i === 0 ? days  : [...new Set(mData.map(d=>d.date))].length;
+      months.push({ label: MONTHS_LT[m] + ' ' + String(y).slice(2), m3, days: d_, isCurrent: i === 0 });
+    }
+
+    if (months.every(x => x.m3 === 0)) { el.innerHTML = ''; return; }
+
+    const maxM3 = Math.max(...months.map(x => x.m3)) || 1;
+
+    el.innerHTML = `<div style="background:white;border-radius:12px;padding:0.9rem 1.1rem">
+      <div style="font-size:11px;font-weight:700;color:#6e6e73;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem">Paskutiniai 3 mėnesiai</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem">
+        ${months.map((x, i) => {
+          const pct = i > 0 && months[i-1].m3 > 0 ? ((x.m3 - months[i-1].m3) / months[i-1].m3 * 100) : null;
+          const col = pct === null ? '#8e8e93' : pct >= 0 ? '#1A7A4A' : '#C0392B';
+          const bar = (x.m3 / maxM3 * 100).toFixed(1);
+          return `<div style="border-radius:10px;padding:0.6rem 0.75rem;background:${x.isCurrent ? '#EEF4FF' : '#f8f8f8'};border:${x.isCurrent ? '2px solid #2B6CB0' : '2px solid transparent'}">
+            <div style="font-size:11px;font-weight:700;color:${x.isCurrent ? '#2B6CB0' : '#6e6e73'};margin-bottom:4px">${x.label}${x.isCurrent ? ' ◀' : ''}</div>
+            <div style="font-size:18px;font-weight:800;color:#0A2342;line-height:1">${x.m3 > 0 ? x.m3.toFixed(1) : '—'}</div>
+            <div style="font-size:10px;color:#8e8e93;margin-top:2px">${x.m3 > 0 ? 'm³ · ' + x.days + ' d.' : 'nėra duomenų'}</div>
+            ${pct !== null && x.m3 > 0 ? `<div style="font-size:11px;font-weight:800;color:${col};margin-top:4px">${pct >= 0 ? '↑' : '↓'} ${Math.abs(pct).toFixed(1)}%</div>` : ''}
+            <div style="height:4px;background:#e5e5ea;border-radius:2px;margin-top:6px"><div style="height:4px;border-radius:2px;background:${x.isCurrent ? '#2B6CB0' : '#8e8e93'};width:${bar}%"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
     </div>`;
   })();
 
