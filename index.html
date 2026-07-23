@@ -74,6 +74,10 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .week-token-box { background: #f8f8f8; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
 .week-token-box input { width: 100%; font-family: inherit; font-size: 14px; padding: 8px 12px; border: 1.5px solid #ddd; border-radius: 8px; margin-top: 0.5rem; }
 .week-total { background: #f0f2f5; border-radius: 10px; padding: 0.6rem 1rem; font-size: 14px; font-weight: 800; color: #0A2342; margin-bottom: 1rem; }
+.week-nav { display: flex; align-items: center; gap: 0.5rem; }
+.week-nav-btn { background: #f2f2f7; border: none; border-radius: 8px; width: 34px; height: 34px; font-size: 16px; cursor: pointer; font-family: inherit; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.week-nav-btn:hover { background: #e0e0e7; }
+.week-nav-label { font-size: 13px; font-weight: 700; color: #6e6e73; min-width: 80px; text-align: center; }
 </style>
 </head>
 <body>
@@ -569,7 +573,12 @@ window.addEventListener('load', () => {
 <div id="week-overlay" onclick="if(event.target===this)closeWeekOverlay()">
   <div class="week-modal">
     <div class="week-modal-header">
-      <div class="week-modal-title">📦 Ši savaitė — kroviniai</div>
+      <div class="week-modal-title">📦 Kroviniai</div>
+      <div class="week-nav">
+        <button class="week-nav-btn" onclick="shiftWeek(-1)" title="Praėjusi savaitė">←</button>
+        <div class="week-nav-label" id="week-nav-label">Ši savaitė</div>
+        <button class="week-nav-btn" onclick="shiftWeek(1)" title="Kita savaitė">→</button>
+      </div>
       <button class="week-close-btn" onclick="closeWeekOverlay()">✕ Uždaryti</button>
     </div>
     <div id="week-token-box" class="week-token-box" style="display:none">
@@ -586,13 +595,32 @@ const PO_ENDPOINT = 'https://script.google.com/macros/s/AKfycbz3O2FzFkxgoEOmNKvB
 const WEEK_DAYS = ['Sekmadienis','Pirmadienis','Antradienis','Trečiadienis','Ketvirtadienis','Penktadienis','Šeštadienis'];
 const STATUS_COLORS = { 'Priimta':'#1A4F80','Vykdoma':'#1A7A4A','Gauta':'#D97706','Patvirtinta':'#6B46C1' };
 
-function weekBounds() {
+let weekOffset = 0;
+let cachedOrders = null;
+
+function weekBounds(offset) {
+  offset = offset || 0;
   const now = new Date();
+  now.setDate(now.getDate() + offset * 7);
   const day = now.getDay(); // 0=sun
   const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
   const fmt = d => d.toISOString().slice(0,10);
   return { mon: fmt(mon), sun: fmt(sun) };
+}
+
+function weekNavLabel(offset) {
+  if (offset === 0) return 'Ši savaitė';
+  if (offset === 1) return 'Kita savaitė';
+  if (offset === -1) return 'Praėjusi';
+  if (offset > 0) return 'Po ' + offset + ' sav.';
+  return 'Prieš ' + Math.abs(offset) + ' sav.';
+}
+
+function shiftWeek(delta) {
+  weekOffset += delta;
+  document.getElementById('week-nav-label').textContent = weekNavLabel(weekOffset);
+  if (cachedOrders) renderWeekOrders(cachedOrders);
 }
 
 function parseOrdersCsv(csv) {
@@ -622,6 +650,9 @@ async function fetchOrders(token) {
 }
 
 function openWeekOverlay() {
+  weekOffset = 0;
+  cachedOrders = null;
+  document.getElementById('week-nav-label').textContent = 'Ši savaitė';
   document.getElementById('week-overlay').classList.add('open');
   const token = localStorage.getItem('po_secret') || '';
   if (token) {
@@ -646,6 +677,7 @@ async function loadWeekOrders(token) {
   try {
     const orders = await fetchOrders(token);
     localStorage.setItem('po_secret', token);
+    cachedOrders = orders;
     document.getElementById('week-token-box').style.display = 'none';
     renderWeekOrders(orders);
   } catch(e) {
@@ -654,7 +686,7 @@ async function loadWeekOrders(token) {
 }
 
 function renderWeekOrders(orders) {
-  const { mon, sun } = weekBounds();
+  const { mon, sun } = weekBounds(weekOffset);
   const week = orders.filter(o => o.krovimo_data >= mon && o.krovimo_data <= sun);
 
   const byDay = {};
@@ -671,7 +703,7 @@ function renderWeekOrders(orders) {
     return WEEK_DAYS[d.getDay()] + ', ' + d.getDate() + '.' + String(d.getMonth()+1).padStart(2,'0');
   };
 
-  let html = `<div class="week-total">Iš viso: ${week.length} krovinių · ${totalM3.toLocaleString('lt-LT')} m³ &nbsp;·&nbsp; ${mon.slice(5).replace('-','.')}–${sun.slice(5).replace('-','.')}</div>`;
+  let html = `<div class="week-total">Iš viso: ${week.length} krovinių · ${totalM3.toLocaleString('lt-LT')} m³ &nbsp;·&nbsp; ${mon.slice(5).replace(/-/g,'.')}–${sun.slice(5).replace(/-/g,'.')}</div>`;
 
   if (!dates.length) {
     html += '<div style="text-align:center;padding:2rem;color:#8e8e93;font-size:14px">Šią savaitę krovinių nėra</div>';
