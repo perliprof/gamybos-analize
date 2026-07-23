@@ -142,6 +142,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
         <div style="height:260px"><canvas id="gam-daily-chart"></canvas></div>
       </div>
       <div id="gam-kpi" class="kpi-row"></div>
+      <div id="gam-compare" style="margin-bottom:0.75rem"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
         <div class="card"><div class="card-title">Produktai · m³</div><div id="gam-products"></div></div>
         <div class="card"><div class="card-title">Žaliavos · kg</div><div id="gam-raw"></div></div>
@@ -480,6 +481,28 @@ function renderGamyba() {
     <div class="kpi-label">${k.label}</div>
     <div class="kpi-value" style="color:${k.color}">${k.val}</div>
   </div>`).join('');
+
+  // Praėjusio mėnesio lyginimas
+  (function() {
+    const pm = gamMonth === 0 ? 11 : gamMonth - 1;
+    const py = gamMonth === 0 ? gamYear - 1 : gamYear;
+    const MONTHS_LT = ['sausis','vasaris','kovas','balandis','gegužė','birželis','liepa','rugpjūtis','rugsėjis','spalis','lapkritis','gruodis'];
+    const prevPrefix = py + '-' + String(pm+1).padStart(2,'0');
+    const prevData = GAMYBA_DATA.filter(d => d.date.startsWith(prevPrefix));
+    const prevM3   = prevData.reduce((s,d)=>s+d.m3,0);
+    const prevDays = [...new Set(prevData.map(d=>d.date))].length;
+    const el = document.getElementById('gam-compare');
+    if (!prevM3) { el.innerHTML = ''; return; }
+    const pct = (totM3 - prevM3) / prevM3 * 100;
+    const col = pct >= 0 ? '#1A7A4A' : '#C0392B';
+    const arrow = pct >= 0 ? '↑' : '↓';
+    el.innerHTML = `<div style="background:white;border-radius:12px;padding:0.65rem 1rem;font-size:13px;display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
+      <span style="font-weight:700;color:#6e6e73;text-transform:uppercase;font-size:11px;letter-spacing:0.5px">Lyginimas su praėjusiu mėn.</span>
+      <span style="color:#8e8e93">${MONTHS_LT[pm].charAt(0).toUpperCase()+MONTHS_LT[pm].slice(1)} ${py}: <b>${prevM3.toFixed(1)} m³</b> · ${prevDays} d.</span>
+      <span style="color:#0A2342;font-weight:700">${MONTHS_LT[gamMonth].charAt(0).toUpperCase()+MONTHS_LT[gamMonth].slice(1)} ${gamYear}: <b>${totM3.toFixed(1)} m³</b> · ${days} d.</span>
+      <span style="font-weight:800;color:${col};font-size:14px">${arrow} ${Math.abs(pct).toFixed(1)}%</span>
+    </div>`;
+  })();
 
   const prodTotals = {};
   data.forEach(d=>Object.entries(d.prods).forEach(([p,v])=>{ prodTotals[p]=(prodTotals[p]||0)+v; }));
