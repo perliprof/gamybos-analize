@@ -54,6 +54,26 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 
 .cal-nav-btn { font-family: 'Montserrat', sans-serif; background: rgba(255,255,255,0.15); border: none; color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 700; }
 .cal-sel { font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; background: rgba(255,255,255,0.12); color: white; padding: 3px 6px; }
+.week-btn { font-family: inherit; font-size: 13px; font-weight: 700; padding: 7px 14px; border: none; border-radius: 8px; background: #1A7A4A; color: white; cursor: pointer; white-space: nowrap; }
+.week-btn:hover { background: #15623b; }
+#week-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 2000; overflow-y: auto; padding: 1.5rem; }
+#week-overlay.open { display: block; }
+.week-modal { background: white; border-radius: 18px; max-width: 700px; margin: 0 auto; padding: 1.5rem; }
+.week-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+.week-modal-title { font-size: 20px; font-weight: 800; color: #0A2342; }
+.week-close-btn { background: #f2f2f7; border: none; border-radius: 8px; padding: 6px 14px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.week-day { margin-bottom: 1rem; }
+.week-day-title { font-size: 13px; font-weight: 800; color: #6e6e73; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem; padding-bottom: 4px; border-bottom: 2px solid #f0f0f0; }
+.week-day-title span { font-weight: 900; color: #0A2342; font-size: 15px; text-transform: none; letter-spacing: 0; }
+.week-order { display: flex; gap: 0.5rem; align-items: baseline; padding: 5px 0; border-bottom: 1px solid #f8f8f8; font-size: 13px; }
+.week-order-time { color: #8e8e93; font-size: 11px; min-width: 42px; }
+.week-order-cust { font-weight: 700; flex: 1; }
+.week-order-prod { color: #1A4F80; }
+.week-order-m3 { font-weight: 800; color: #0A2342; min-width: 48px; text-align: right; }
+.week-order-status { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; }
+.week-token-box { background: #f8f8f8; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+.week-token-box input { width: 100%; font-family: inherit; font-size: 14px; padding: 8px 12px; border: 1.5px solid #ddd; border-radius: 8px; margin-top: 0.5rem; }
+.week-total { background: #f0f2f5; border-radius: 10px; padding: 0.6rem 1rem; font-size: 14px; font-weight: 800; color: #0A2342; margin-bottom: 1rem; }
 </style>
 </head>
 <body>
@@ -77,6 +97,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
   </div>
   <div class="header-right">
     <!-- Mode tabs -->
+    <button class="week-btn" onclick="openWeekOverlay()">📦 Ši savaitė</button>
     <button id="gbt0" onclick="setGamMode(0)" class="nav-btn">Mėnuo</button>
     <button id="gbt1" onclick="setGamMode(1)" class="nav-btn" style="opacity:0.6">Metinis</button>
     <button id="gbt2" onclick="setGamMode(2)" class="nav-btn" style="opacity:0.6">Pagal mėnesį</button>
@@ -543,6 +564,139 @@ window.addEventListener('load', () => {
     init();
   }
 });
+</script>
+
+<div id="week-overlay" onclick="if(event.target===this)closeWeekOverlay()">
+  <div class="week-modal">
+    <div class="week-modal-header">
+      <div class="week-modal-title">📦 Ši savaitė — kroviniai</div>
+      <button class="week-close-btn" onclick="closeWeekOverlay()">✕ Uždaryti</button>
+    </div>
+    <div id="week-token-box" class="week-token-box" style="display:none">
+      <div style="font-size:13px;font-weight:700;color:#6e6e73">Įveskite pardavimų prieigos kodą:</div>
+      <input type="password" id="week-token-input" placeholder="Kodas…" onkeydown="if(event.key==='Enter')loadWeekOrders()">
+      <button onclick="loadWeekOrders()" style="margin-top:0.5rem;font-family:inherit;font-size:13px;font-weight:700;padding:7px 16px;border:none;border-radius:8px;background:#0A2342;color:white;cursor:pointer">Rodyti</button>
+    </div>
+    <div id="week-content"><div style="text-align:center;padding:2rem;color:#8e8e93">Kraunama…</div></div>
+  </div>
+</div>
+
+<script>
+const PO_ENDPOINT = 'https://script.google.com/macros/s/AKfycbz3O2FzFkxgoEOmNKvBxtKpVr6lVAX-VAPzvZSkJb4NL_dCUtGqqFYwSFPFeeeqY6Nk/exec';
+const WEEK_DAYS = ['Sekmadienis','Pirmadienis','Antradienis','Trečiadienis','Ketvirtadienis','Penktadienis','Šeštadienis'];
+const STATUS_COLORS = { 'Priimta':'#1A4F80','Vykdoma':'#1A7A4A','Gauta':'#D97706','Patvirtinta':'#6B46C1' };
+
+function weekBounds() {
+  const now = new Date();
+  const day = now.getDay(); // 0=sun
+  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = d => d.toISOString().slice(0,10);
+  return { mon: fmt(mon), sun: fmt(sun) };
+}
+
+function parseOrdersCsv(csv) {
+  const lines = csv.split('\n');
+  const rows = [];
+  for (let i = 3; i < lines.length; i++) { // skip rows 0,1,2 (metadata+header)
+    const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g,'').replace(/""/g,'"').trim());
+    if (!cols[0] || !/^\d+$/.test(cols[0])) continue; // skip non-data rows
+    rows.push({
+      seka: cols[0], uzsakymo_data: cols[1], krovimo_data: cols[2],
+      laikas: cols[3], produktas: cols[4], uzsakovas: cols[5],
+      uzsakymo_nr: cols[6], busena: cols[7], m3: cols[10]
+    });
+  }
+  return rows;
+}
+
+async function fetchOrders(token) {
+  const resp = await fetch(PO_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ mode: 'read', token })
+  });
+  const out = await resp.json();
+  if (!out.ok) throw new Error(out.error || 'Klaida');
+  return parseOrdersCsv(out.csv || '');
+}
+
+function openWeekOverlay() {
+  document.getElementById('week-overlay').classList.add('open');
+  const token = localStorage.getItem('po_secret') || '';
+  if (token) {
+    document.getElementById('week-token-box').style.display = 'none';
+    loadWeekOrders(token);
+  } else {
+    document.getElementById('week-token-box').style.display = '';
+    document.getElementById('week-content').innerHTML = '';
+    setTimeout(() => document.getElementById('week-token-input').focus(), 50);
+  }
+}
+
+function closeWeekOverlay() {
+  document.getElementById('week-overlay').classList.remove('open');
+}
+
+async function loadWeekOrders(token) {
+  token = token || document.getElementById('week-token-input')?.value.trim() || localStorage.getItem('po_secret') || '';
+  if (!token) return;
+  const el = document.getElementById('week-content');
+  el.innerHTML = '<div style="text-align:center;padding:2rem;color:#8e8e93">Kraunama…</div>';
+  try {
+    const orders = await fetchOrders(token);
+    localStorage.setItem('po_secret', token);
+    document.getElementById('week-token-box').style.display = 'none';
+    renderWeekOrders(orders);
+  } catch(e) {
+    el.innerHTML = '<div style="color:#C0392B;padding:1rem;font-weight:700">Klaida: ' + e.message + '</div>';
+  }
+}
+
+function renderWeekOrders(orders) {
+  const { mon, sun } = weekBounds();
+  const week = orders.filter(o => o.krovimo_data >= mon && o.krovimo_data <= sun);
+
+  const byDay = {};
+  week.forEach(o => {
+    if (!byDay[o.krovimo_data]) byDay[o.krovimo_data] = [];
+    byDay[o.krovimo_data].push(o);
+  });
+
+  const totalM3 = week.reduce((s,o) => s + (parseFloat(o.m3)||0), 0);
+  const dates = Object.keys(byDay).sort();
+
+  const fmtDate = ds => {
+    const d = new Date(ds + 'T00:00:00');
+    return WEEK_DAYS[d.getDay()] + ', ' + d.getDate() + '.' + String(d.getMonth()+1).padStart(2,'0');
+  };
+
+  let html = `<div class="week-total">Iš viso: ${week.length} krovinių · ${totalM3.toLocaleString('lt-LT')} m³ &nbsp;·&nbsp; ${mon.slice(5).replace('-','.')}–${sun.slice(5).replace('-','.')}</div>`;
+
+  if (!dates.length) {
+    html += '<div style="text-align:center;padding:2rem;color:#8e8e93;font-size:14px">Šią savaitę krovinių nėra</div>';
+  } else {
+    dates.forEach(ds => {
+      const dayOrders = byDay[ds].sort((a,b) => (a.laikas||'').localeCompare(b.laikas||''));
+      const dayM3 = dayOrders.reduce((s,o) => s + (parseFloat(o.m3)||0), 0);
+      const sc = STATUS_COLORS;
+      html += `<div class="week-day">
+        <div class="week-day-title"><span>${fmtDate(ds)}</span> — ${dayOrders.length} krov., ${dayM3.toLocaleString('lt-LT')} m³</div>
+        ${dayOrders.map(o => {
+          const col = sc[o.busena] || '#8e8e93';
+          return `<div class="week-order">
+            <span class="week-order-time">${o.laikas||'—'}</span>
+            <span class="week-order-cust">${o.uzsakovas||'—'}</span>
+            <span class="week-order-prod">${o.produktas||'—'}</span>
+            <span class="week-order-m3">${o.m3||'—'} m³</span>
+            <span class="week-order-status" style="background:${col}22;color:${col}">${o.busena||'—'}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    });
+  }
+  document.getElementById('week-content').innerHTML = html;
+}
 </script>
 </body>
 </html>
