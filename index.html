@@ -67,15 +67,14 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .week-day-title span { font-weight: 900; color: #0A2342; font-size: 15px; text-transform: none; letter-spacing: 0; }
 .week-prod-group { margin-bottom: 6px; }
 .week-prod-header { font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: #1A4F80; padding: 3px 0 2px; border-bottom: 2px solid #1A4F8033; margin-bottom: 2px; }
-.week-order { display: grid; grid-template-columns: 38px 1fr; gap: 2px 6px; padding: 4px 0; border-bottom: 1px solid #f8f8f8; font-size: 13px; }
+.week-order { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; border-bottom: 1px solid #f8f8f8; font-size: 13px; flex-wrap: nowrap; }
 .week-order.low-priority { opacity: 0.55; }
-.week-order-time { color: #8e8e93; font-size: 11px; grid-row: span 3; align-self: start; padding-top: 1px; }
-.week-order-cust { font-weight: 700; }
-.week-order-auto { color: #555; font-size: 12px; }
-.week-order-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.week-order-m3 { font-weight: 800; color: #0A2342; }
-.week-order-nr { color: #8e8e93; font-size: 11px; }
-.week-order-status { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; }
+.week-order-time { color: #8e8e93; font-size: 11px; min-width: 36px; flex-shrink: 0; }
+.week-order-cust { font-weight: 700; flex-shrink: 0; }
+.week-order-auto { color: #555; font-size: 12px; flex-shrink: 0; }
+.week-order-m3 { font-weight: 800; color: #0A2342; flex-shrink: 0; }
+.week-order-nr { color: #8e8e93; font-size: 11px; flex-shrink: 0; }
+.week-order-status { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; flex-shrink: 0; }
 .week-token-box { background: #f8f8f8; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
 .week-token-box input { width: 100%; font-family: inherit; font-size: 14px; padding: 8px 12px; border: 1.5px solid #ddd; border-radius: 8px; margin-top: 0.5rem; }
 .week-total { background: #f0f2f5; border-radius: 10px; padding: 0.6rem 1rem; font-size: 14px; font-weight: 800; color: #0A2342; margin-bottom: 1rem; }
@@ -795,12 +794,10 @@ function renderWeekOrders(orders) {
           return `<div class="week-order${isLow ? ' low-priority' : ''}">
             <span class="week-order-time">${o.laikas||'—'}</span>
             <span class="week-order-cust">${o.uzsakovas||'—'}</span>
-            ${o.auto_info ? `<span class="week-order-auto">${o.auto_info}</span>` : '<span></span>'}
-            <span class="week-order-meta">
-              <span class="week-order-m3">${o.m3||'—'} m³</span>
-              ${o.uzsakymo_nr ? `<span class="week-order-nr">${o.uzsakymo_nr}</span>` : ''}
-              <span class="week-order-status" style="background:${col}22;color:${col}">${o.busena||'—'}</span>
-            </span>
+            ${o.auto_info ? `<span class="week-order-auto">${o.auto_info}</span>` : ''}
+            <span class="week-order-m3">${o.m3||'—'} m³</span>
+            ${o.uzsakymo_nr ? `<span class="week-order-nr">${o.uzsakymo_nr}</span>` : ''}
+            <span class="week-order-status" style="background:${col}22;color:${col}">${o.busena||'—'}</span>
           </div>`;
         }).join('');
 
