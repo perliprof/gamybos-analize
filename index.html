@@ -83,6 +83,18 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .week-nav-btn { background: #f2f2f7; border: none; border-radius: 8px; width: 34px; height: 34px; font-size: 16px; cursor: pointer; font-family: inherit; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .week-nav-btn:hover { background: #e0e0e7; }
 .week-nav-label { font-size: 13px; font-weight: 700; color: #6e6e73; min-width: 80px; text-align: center; }
+@media print {
+  body > *:not(#week-overlay) { display: none !important; }
+  #week-overlay { display: block !important; position: static !important; background: none !important; padding: 0 !important; overflow: visible !important; }
+  .week-modal { box-shadow: none !important; max-height: none !important; overflow: visible !important; }
+  .week-modal-header { border-bottom: 2px solid #ccc; margin-bottom: 0.5rem; }
+  .week-nav-btn, .week-close-btn, #week-token-box { display: none !important; }
+  .week-total { background: none !important; border: 1px solid #ccc; }
+  .week-day { break-inside: avoid; page-break-inside: avoid; }
+  .week-order { break-inside: avoid; }
+  .low-priority { opacity: 1 !important; }
+  .week-order-status { border: 1px solid currentColor !important; background: none !important; }
+}
 </style>
 </head>
 <body>
@@ -625,6 +637,7 @@ window.addEventListener('load', () => {
         <div class="week-nav-label" id="week-nav-label">Ši savaitė</div>
         <button class="week-nav-btn" onclick="shiftWeek(1)" title="Kita savaitė">→</button>
       </div>
+      <button class="week-nav-btn" onclick="window.print()" title="Spausdinti" style="width:auto;padding:0 10px;font-size:13px">🖨 Spausdinti</button>
       <button class="week-close-btn" onclick="closeWeekOverlay()">✕ Uždaryti</button>
     </div>
     <div id="week-token-box" class="week-token-box" style="display:none">
