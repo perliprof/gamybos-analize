@@ -65,11 +65,16 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .week-day { margin-bottom: 1rem; }
 .week-day-title { font-size: 13px; font-weight: 800; color: #6e6e73; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem; padding-bottom: 4px; border-bottom: 2px solid #f0f0f0; }
 .week-day-title span { font-weight: 900; color: #0A2342; font-size: 15px; text-transform: none; letter-spacing: 0; }
-.week-order { display: flex; gap: 0.5rem; align-items: baseline; padding: 5px 0; border-bottom: 1px solid #f8f8f8; font-size: 13px; }
-.week-order-time { color: #8e8e93; font-size: 11px; min-width: 42px; }
-.week-order-cust { font-weight: 700; flex: 1; }
-.week-order-prod { color: #1A4F80; }
-.week-order-m3 { font-weight: 800; color: #0A2342; min-width: 48px; text-align: right; }
+.week-prod-group { margin-bottom: 6px; }
+.week-prod-header { font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: #1A4F80; padding: 3px 0 2px; border-bottom: 2px solid #1A4F8033; margin-bottom: 2px; }
+.week-order { display: grid; grid-template-columns: 38px 1fr; gap: 2px 6px; padding: 4px 0; border-bottom: 1px solid #f8f8f8; font-size: 13px; }
+.week-order.low-priority { opacity: 0.55; }
+.week-order-time { color: #8e8e93; font-size: 11px; grid-row: span 3; align-self: start; padding-top: 1px; }
+.week-order-cust { font-weight: 700; }
+.week-order-auto { color: #555; font-size: 12px; }
+.week-order-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.week-order-m3 { font-weight: 800; color: #0A2342; }
+.week-order-nr { color: #8e8e93; font-size: 11px; }
 .week-order-status { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; }
 .week-token-box { background: #f8f8f8; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
 .week-token-box input { width: 100%; font-family: inherit; font-size: 14px; padding: 8px 12px; border: 1.5px solid #ddd; border-radius: 8px; margin-top: 0.5rem; }
@@ -673,7 +678,7 @@ function parseOrdersCsv(csv) {
     rows.push({
       seka: cols[0], uzsakymo_data: cols[1], krovimo_data: cols[2],
       laikas: cols[3], produktas: cols[4], uzsakovas: cols[5],
-      uzsakymo_nr: cols[6], busena: cols[7], m3: cols[10]
+      uzsakymo_nr: cols[6], busena: cols[7], auto_info: cols[9], m3: cols[10]
     });
   }
   return rows;
@@ -739,6 +744,15 @@ function renderWeekOrders(orders) {
   const totalM3 = week.reduce((s,o) => s + (parseFloat(o.m3)||0), 0);
   const dates = Object.keys(byDay).sort();
 
+  // Produktų eiliškumas savaitei — visi unikalūs produktai, sortuoti pagal bendrą m3
+  const PROD_RANK = ['ekstra','extra','ekstra 1-6','extra 1-6','premium','medium','palaidas','silos','a silos','silosas'];
+  const prodRank = p => { const i = PROD_RANK.indexOf((p||'').toLowerCase().trim()); return i < 0 ? 99 : i; };
+
+  const weekProds = [...new Set(week.map(o => o.produktas||'—'))].sort((a,b) => prodRank(a) - prodRank(b) || a.localeCompare(b));
+
+  // Būsenos svarba: Vykdoma = aukštas, Priimta/Gauta = žemas
+  const statusRank = s => { if (!s) return 1; if (s==='Vykdoma') return 0; if (s==='Priimta'||s==='Gauta') return 2; return 1; };
+
   const fmtDate = ds => {
     const d = new Date(ds + 'T00:00:00');
     return WEEK_DAYS[d.getDay()] + ', ' + d.getDate() + '.' + String(d.getMonth()+1).padStart(2,'0');
@@ -750,21 +764,42 @@ function renderWeekOrders(orders) {
     html += '<div style="text-align:center;padding:2rem;color:#8e8e93;font-size:14px">Šią savaitę krovinių nėra</div>';
   } else {
     dates.forEach(ds => {
-      const dayOrders = byDay[ds].sort((a,b) => (a.laikas||'').localeCompare(b.laikas||''));
+      const dayOrders = byDay[ds];
       const dayM3 = dayOrders.reduce((s,o) => s + (parseFloat(o.m3)||0), 0);
       const sc = STATUS_COLORS;
-      html += `<div class="week-day">
-        <div class="week-day-title"><span>${fmtDate(ds)}</span> — ${dayOrders.length} krov., ${dayM3.toLocaleString('lt-LT')} m³</div>
-        ${dayOrders.map(o => {
+
+      // Dienos produktai (tik tie, kurie yra tą dieną), toje pačioje savaitės tvarkoje
+      const dayProds = weekProds.filter(p => dayOrders.some(o => (o.produktas||'—') === p));
+
+      const prodGroupsHtml = dayProds.map(prod => {
+        const prodOrders = dayOrders
+          .filter(o => (o.produktas||'—') === prod)
+          .sort((a,b) => statusRank(a.busena) - statusRank(b.busena) || (a.laikas||'').localeCompare(b.laikas||''));
+
+        const ordersHtml = prodOrders.map(o => {
           const col = sc[o.busena] || '#8e8e93';
-          return `<div class="week-order">
+          const isLow = o.busena === 'Priimta' || o.busena === 'Gauta';
+          return `<div class="week-order${isLow ? ' low-priority' : ''}">
             <span class="week-order-time">${o.laikas||'—'}</span>
             <span class="week-order-cust">${o.uzsakovas||'—'}</span>
-            <span class="week-order-prod">${o.produktas||'—'}</span>
-            <span class="week-order-m3">${o.m3||'—'} m³</span>
-            <span class="week-order-status" style="background:${col}22;color:${col}">${o.busena||'—'}</span>
+            ${o.auto_info ? `<span class="week-order-auto">${o.auto_info}</span>` : '<span></span>'}
+            <span class="week-order-meta">
+              <span class="week-order-m3">${o.m3||'—'} m³</span>
+              ${o.uzsakymo_nr ? `<span class="week-order-nr">${o.uzsakymo_nr}</span>` : ''}
+              <span class="week-order-status" style="background:${col}22;color:${col}">${o.busena||'—'}</span>
+            </span>
           </div>`;
-        }).join('')}
+        }).join('');
+
+        return `<div class="week-prod-group">
+          <div class="week-prod-header">${prod}</div>
+          ${ordersHtml}
+        </div>`;
+      }).join('');
+
+      html += `<div class="week-day">
+        <div class="week-day-title"><span>${fmtDate(ds)}</span> — ${dayOrders.length} krov., ${dayM3.toLocaleString('lt-LT')} m³</div>
+        ${prodGroupsHtml}
       </div>`;
     });
   }
