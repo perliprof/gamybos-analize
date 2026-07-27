@@ -617,6 +617,14 @@ function init() {
   loadGamyba();
 }
 
+// Hub tokeno perdavimas per URL hash
+(function() {
+  const m = location.hash.match(/^#hub=(.+)/);
+  if (!m) return;
+  try { decodeURIComponent(m[1]).split('&').forEach(p => { const i=p.indexOf('='); if(i>0) localStorage.setItem(p.slice(0,i),p.slice(i+1)); }); } catch(_) {}
+  history.replaceState(null, '', location.pathname + location.search);
+})();
+
 // Paleidimas
 window.addEventListener('load', () => {
   const saved = localStorage.getItem('gam_secret');
