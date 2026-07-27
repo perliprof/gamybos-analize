@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gamybos analizė · Perliprof</title>
-<meta name="theme-color" content="#7A3B00">
+<meta name="theme-color" content="#5C7C28">
 <link rel="apple-touch-icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,7 @@
 body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
 
 .page-header {
-  background: #7A3B00; color: white;
+  background: #5C7C28; color: white;
   padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center;
   position: sticky; top: 0; z-index: 100;
 }
@@ -40,44 +40,44 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
 .kpi-value { font-size: 22px; font-weight: 800; line-height: 1.1; }
 
 .card { background: white; border-radius: 14px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
-.card-title { font-size: 14px; font-weight: 700; color: #0A2342; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
+.card-title { font-size: 14px; font-weight: 700; color: #0A0A0A; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
 
-#auth-gate { position: fixed; inset: 0; background: #7A3B00; display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+#auth-gate { position: fixed; inset: 0; background: #5C7C28; display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
 #auth-gate.show { display: flex; }
 .auth-box { background: #fff; border-radius: 16px; padding: 28px 26px; width: 100%; max-width: 340px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); text-align: center; }
-.auth-title { font-size: 19px; font-weight: 800; color: #7A3B00; }
+.auth-title { font-size: 19px; font-weight: 800; color: #5C7C28; }
 .auth-sub { font-size: 13px; color: #6e6e73; margin: 6px 0 16px; }
 .auth-box input { width: 100%; font-family: inherit; font-size: 15px; padding: 11px 13px; border: 1px solid #d0d5dd; border-radius: 10px; outline: none; margin-bottom: 10px; }
-.auth-box input:focus { border-color: #7A3B00; }
-.auth-btn { width: 100%; font-family: inherit; font-size: 15px; font-weight: 700; padding: 11px; border: none; border-radius: 10px; background: #7A3B00; color: white; cursor: pointer; }
+.auth-box input:focus { border-color: #5C7C28; }
+.auth-btn { width: 100%; font-family: inherit; font-size: 15px; font-weight: 700; padding: 11px; border: none; border-radius: 10px; background: #5C7C28; color: white; cursor: pointer; }
 .auth-msg { margin-top: 10px; font-size: 13px; color: #C0392B; min-height: 16px; }
 
 .cal-nav-btn { font-family: 'Montserrat', sans-serif; background: rgba(255,255,255,0.15); border: none; color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 700; }
 .cal-sel { font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; border: 1px solid rgba(255,255,255,0.4); border-radius: 6px; background: rgba(255,255,255,0.12); color: white; padding: 3px 6px; }
 .week-btn { font-family: inherit; font-size: 13px; font-weight: 700; padding: 7px 14px; border: none; border-radius: 8px; background: #1A7A4A; color: white; cursor: pointer; white-space: nowrap; }
-.week-btn:hover { background: #15623b; }
+.week-btn:hover { background: #3d6b16; }
 #week-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 2000; overflow-y: auto; padding: 1.5rem; }
 #week-overlay.open { display: block; }
 .week-modal { background: white; border-radius: 18px; max-width: 700px; margin: 0 auto; padding: 1.5rem; }
 .week-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-.week-modal-title { font-size: 20px; font-weight: 800; color: #0A2342; }
+.week-modal-title { font-size: 20px; font-weight: 800; color: #0A0A0A; }
 .week-close-btn { background: #f2f2f7; border: none; border-radius: 8px; padding: 6px 14px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
 .week-day { margin-bottom: 1rem; }
 .week-day-title { font-size: 13px; font-weight: 800; color: #6e6e73; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem; padding-bottom: 4px; border-bottom: 2px solid #f0f0f0; }
-.week-day-title span { font-weight: 900; color: #0A2342; font-size: 15px; text-transform: none; letter-spacing: 0; }
+.week-day-title span { font-weight: 900; color: #0A0A0A; font-size: 15px; text-transform: none; letter-spacing: 0; }
 .week-prod-group { margin-bottom: 6px; }
-.week-prod-header { font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: #1A4F80; padding: 3px 0 2px; border-bottom: 2px solid #1A4F8033; margin-bottom: 2px; }
+.week-prod-header { font-size: 10px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: #5C7C28; padding: 3px 0 2px; border-bottom: 2px solid #5C7C2833; margin-bottom: 2px; }
 .week-order { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; border-bottom: 1px solid #f8f8f8; font-size: 13px; flex-wrap: nowrap; }
 .week-order.low-priority { opacity: 0.55; }
 .week-order-time { color: #8e8e93; font-size: 11px; min-width: 36px; flex-shrink: 0; }
 .week-order-cust { font-weight: 700; flex-shrink: 0; }
 .week-order-auto { color: #555; font-size: 12px; flex-shrink: 0; }
-.week-order-m3 { font-weight: 800; color: #0A2342; flex-shrink: 0; }
+.week-order-m3 { font-weight: 800; color: #0A0A0A; flex-shrink: 0; }
 .week-order-nr { color: #8e8e93; font-size: 11px; flex-shrink: 0; }
 .week-order-status { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; flex-shrink: 0; }
 .week-token-box { background: #f8f8f8; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
 .week-token-box input { width: 100%; font-family: inherit; font-size: 14px; padding: 8px 12px; border: 1.5px solid #ddd; border-radius: 8px; margin-top: 0.5rem; }
-.week-total { background: #f0f2f5; border-radius: 10px; padding: 0.6rem 1rem; font-size: 14px; font-weight: 800; color: #0A2342; margin-bottom: 1rem; }
+.week-total { background: #f0f2f5; border-radius: 10px; padding: 0.6rem 1rem; font-size: 14px; font-weight: 800; color: #0A0A0A; margin-bottom: 1rem; }
 .week-nav { display: flex; align-items: center; gap: 0.5rem; }
 .week-nav-btn { background: #f2f2f7; border: none; border-radius: 8px; width: 34px; height: 34px; font-size: 16px; cursor: pointer; font-family: inherit; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .week-nav-btn:hover { background: #e0e0e7; }
@@ -134,7 +134,7 @@ body { font-family: 'Montserrat', system-ui, sans-serif; background: #f0f2f5; co
       <button class="cal-nav-btn" onclick="gamybaNav(1)">›</button>
     </div>
     <div id="gam-sel-1" style="display:none;align-items:center">
-      <select class="cal-sel" id="gam-ann-year" onchange="renderGamybaAnnual()" style="color:#0A2342;background:#f2f2f7;border-color:#e5e5ea"></select>
+      <select class="cal-sel" id="gam-ann-year" onchange="renderGamybaAnnual()" style="color:#0A0A0A;background:#f2f2f7;border-color:#e5e5ea"></select>
     </div>
     <div id="gam-sel-2" style="display:none;align-items:center">
       <select class="cal-sel" id="gam-cross-month" onchange="renderGamybaCrossYear()">
@@ -378,8 +378,8 @@ function renderGamybaAnnual() {
   const fmt = v => v>0 ? v.toLocaleString('lt-LT') : '—';
   document.getElementById('gam-raw-summary').innerHTML = `
     <div style="border-top:1px solid #e5e5ea;padding-top:0.9rem;display:grid;grid-template-columns:repeat(5,1fr);gap:0.6rem">
-      ${[{label:'Iš viso m³',val:totM3ann>0?totM3ann.toFixed(1)+' m³':'—',color:'#0A2342'},
-         {label:'Darbo dienos',val:totDays||'—',color:'#1A4F80'},
+      ${[{label:'Iš viso m³',val:totM3ann>0?totM3ann.toFixed(1)+' m³':'—',color:'#0A0A0A'},
+         {label:'Darbo dienos',val:totDays||'—',color:'#5C7C28'},
          {label:'Krituliai+smėlis',val:totKrit>0?fmt(Math.round(totKrit))+' kg':'—',color:'#C0392B'},
          {label:'Sunaudota žaliava',val:totRaw>0?fmt(Math.round(totRaw))+' kg':'—',color:'#7A5200'},
          {label:'Dujos',val:totGas>0?totGas.toLocaleString('lt-LT')+' m³':'—',color:'#E07055'},
@@ -418,9 +418,9 @@ function renderGamybaCrossYear() {
     const m3 = yd.reduce((s,d)=>s+d.m3,0);
     const days = [...new Set(yd.map(d=>d.date))].length;
     const gas = yd.reduce((s,d)=>s+d.gas,0);
-    return `<div class="kpi-card" style="border-top-color:#0A2342">
+    return `<div class="kpi-card" style="border-top-color:#0A0A0A">
       <div class="kpi-label">${yr}</div>
-      <div class="kpi-value" style="color:#0A2342">${m3>0?m3.toFixed(1)+' m³':'—'}</div>
+      <div class="kpi-value" style="color:#0A0A0A">${m3>0?m3.toFixed(1)+' m³':'—'}</div>
       <div style="font-size:11px;color:#6e6e73;margin-top:2px">${days} d. · ${gas>0?gas.toLocaleString('lt-LT')+' m³ duj.':'—'}</div>
     </div>`;
   }).join('');
@@ -488,8 +488,8 @@ function renderGamyba() {
   const totKrit  = data.reduce((s,d)=>s+d.krituliai,0);
   const days     = dayDates.length;
   document.getElementById('gam-kpi').innerHTML = [
-    {label:'Iš viso m³',   val:totM3.toFixed(1)+' m³',                                            color:'#0A2342'},
-    {label:'Darbo dienų',  val:days,                                                                color:'#1A4F80'},
+    {label:'Iš viso m³',   val:totM3.toFixed(1)+' m³',                                            color:'#0A0A0A'},
+    {label:'Darbo dienų',  val:days,                                                                color:'#5C7C28'},
     {label:'Sunaudota žaliava', val:totRaw>0?totRaw.toLocaleString('lt-LT')+' kg':'—',            color:'#7A5200'},
     {label:'Krituliai',    val:totKrit>0?totKrit.toFixed(0)+' kg':'—',                             color:'#C0392B'},
     {label:'Dujos',        val:totGas>0?totGas.toLocaleString('lt-LT')+' m³':'—',                 color:'#E07055'},
@@ -528,7 +528,7 @@ function renderGamyba() {
           const bar = (x.m3 / maxM3 * 100).toFixed(1);
           return `<div style="border-radius:10px;padding:0.6rem 0.75rem;background:${x.isCurrent ? '#EEF4FF' : '#f8f8f8'};border:${x.isCurrent ? '2px solid #2B6CB0' : '2px solid transparent'}">
             <div style="font-size:11px;font-weight:700;color:${x.isCurrent ? '#2B6CB0' : '#6e6e73'};margin-bottom:4px">${x.label}${x.isCurrent ? ' ◀' : ''}</div>
-            <div style="font-size:18px;font-weight:800;color:#0A2342;line-height:1">${x.m3 > 0 ? x.m3.toFixed(1) : '—'}</div>
+            <div style="font-size:18px;font-weight:800;color:#0A0A0A;line-height:1">${x.m3 > 0 ? x.m3.toFixed(1) : '—'}</div>
             <div style="font-size:10px;color:#8e8e93;margin-top:2px">${x.m3 > 0 ? 'm³ · ' + x.days + ' d.' : 'nėra duomenų'}</div>
             ${pct !== null && x.m3 > 0 ? `<div style="font-size:11px;font-weight:800;color:${col};margin-top:4px">${pct >= 0 ? '↑' : '↓'} ${Math.abs(pct).toFixed(1)}%</div>` : ''}
             <div style="height:4px;background:#e5e5ea;border-radius:2px;margin-top:6px"><div style="height:4px;border-radius:2px;background:${x.isCurrent ? '#2B6CB0' : '#8e8e93'};width:${bar}%"></div></div>
@@ -650,7 +650,7 @@ window.addEventListener('load', () => {
     <div id="week-token-box" class="week-token-box" style="display:none">
       <div style="font-size:13px;font-weight:700;color:#6e6e73">Įveskite pardavimų prieigos kodą:</div>
       <input type="password" id="week-token-input" placeholder="Kodas…" onkeydown="if(event.key==='Enter')loadWeekOrders()">
-      <button onclick="loadWeekOrders()" style="margin-top:0.5rem;font-family:inherit;font-size:13px;font-weight:700;padding:7px 16px;border:none;border-radius:8px;background:#0A2342;color:white;cursor:pointer">Rodyti</button>
+      <button onclick="loadWeekOrders()" style="margin-top:0.5rem;font-family:inherit;font-size:13px;font-weight:700;padding:7px 16px;border:none;border-radius:8px;background:#0A0A0A;color:white;cursor:pointer">Rodyti</button>
     </div>
     <div id="week-content"><div style="text-align:center;padding:2rem;color:#8e8e93">Kraunama…</div></div>
   </div>
@@ -659,7 +659,7 @@ window.addEventListener('load', () => {
 <script>
 const PO_ENDPOINT = 'https://script.google.com/macros/s/AKfycbz3O2FzFkxgoEOmNKvBxtKpVr6lVAX-VAPzvZSkJb4NL_dCUtGqqFYwSFPFeeeqY6Nk/exec';
 const WEEK_DAYS = ['Sekmadienis','Pirmadienis','Antradienis','Trečiadienis','Ketvirtadienis','Penktadienis','Šeštadienis'];
-const STATUS_COLORS = { 'Priimta':'#1A4F80','Vykdoma':'#1A7A4A','Gauta':'#D97706','Patvirtinta':'#6B46C1' };
+const STATUS_COLORS = { 'Priimta':'#5C7C28','Vykdoma':'#1A7A4A','Gauta':'#D97706','Patvirtinta':'#6B46C1' };
 
 let weekOffset = 0;
 let cachedOrders = null;
